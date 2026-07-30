@@ -400,6 +400,7 @@ jobs:
           cd kernel_workspace
           # ATH9K_HTC 依赖 MAC80211/CFG80211，机型自带WLAN使用高通私有驱动，
           # 默认 defconfig 中通常未启用主线 802.11 协议栈，需显式启用，否则该配置会在合并时被静默丢弃
+          echo "CONFIG_WLAN=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_CFG80211=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_MAC80211=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_MAC80211_LEDS=y" >> ./common/arch/arm64/configs/gki_defconfig
