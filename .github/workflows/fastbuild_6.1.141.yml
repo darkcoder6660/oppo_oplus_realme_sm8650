@@ -1,3 +1,4 @@
+ease_zips/AnyKernel3_*.zip
 name: 6.1.141 欧加真OKI内核快速构建
 
 env:
@@ -26,22 +27,22 @@ on:
         description: '是否开启susfs(用于增强隐藏环境挂载功能; 可能轻微增加耗电，上游更新导致不稳定时或不需要可关闭)'
         required: true
         type: boolean
-        default: true
+        default: 'true'
       kpm_enable:
         description: '是否开启kpm(使用KpatchNext独立实现kpm(支持任意KSU/面具环境); 不需要可保持默认关闭)'
         required: true
         type: boolean
-        default: false
+        default: 'false'
       lz4_enable:
         description: '是否安装 lz4 1.10.0+zstd 1.5.7 补丁'
         required: true
         type: boolean
-        default: true
+        default: 'true'
       lz4kd_enable:
         description: '是否安装 LZ4KD 补丁(若已开启lz4+zstd补丁则可不开启)'
         required: true
         type: boolean
-        default: false
+        default: 'false'
       bbr_enable:
         description: '是否启用bbr算法(优化上行数据,对手机日用无太大意义甚至可能负优化;false关闭,true仅加入算法,default设为默认)'
         required: true
@@ -64,32 +65,32 @@ on:
         description: '是否开启网络功能拓展配置(用于为ipset及需要iptables等高级网络功能内核支持的程序提供支持)'
         required: true
         type: boolean
-        default: false
+        default: 'false'
       ssg_enable:
         description: '是否启用三星SSG IO调度器支持(提升IO读写性能; 在一加12上可能导致bug)'
         required: true
         type: boolean
-        default: true
+        default: 'true'
       rekernel_enable:
         description: '是否启用Re-Kernel支持(与Freezer/NoActive等软件配合, 提升应用冻结能力)'
         required: true
         type: boolean
-        default: false
+        default: 'false'
       baseband_guard:
         description: '是否开启内核级基带保护(阻止一切对非用户分区的写入，有效防止格机)'
         required: true
         type: boolean
-        default: true
+        default: 'true'
       ccache_update:
         description: '更新ccache缓存(将本次编译生成的ccache缓存覆盖至仓库缓存，在更改编译配置、源码或需要刷新缓存时开启)'
         required: true
         type: boolean
-        default: false
+        default: 'false'
       ccache_debug:
         description: '是否上传 Ccache调试日志(用于调试, 无需要不必开启)'
         required: true
         type: boolean
-        default: false
+        default: 'false'
       kernel_suffix:
         description: '内核后缀(留空默认,开头别加连字符,勿加空格等影响指令运行的保留字符)'
         required: false
@@ -119,13 +120,12 @@ jobs:
           sudo apt purge man-db &&
           sudo rm -rf /var/lib/man-db/auto-update &&
           sudo apt update &&
-          sudo apt-get install -y --no-install-recommends binutils python-is-python3 libssl-dev libelf-dev aria2 zstd
+          sudo apt-get install -y --no-install-recommends binutils python-is-python3 libssl-dev libelf-dev &
           
-          # 使用最新版ccache-ECS
           wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/lib/ccache-x86-64 -O ccache &&
           sudo cp -f ./ccache /usr/bin/ccache &&
           sudo chmod +x /usr/bin/ccache &&
-          rm -f ./ccache
+          rm -f ./ccache &
           
           echo "正在克隆源码仓库..."
           aria2c -s16 -x16 -k1M https://github.com/cctv18/android_kernel_common_oneplus_sm8650/archive/refs/heads/oneplus/sm8650_b_16.0.0_oneplus12_6.1.141.zip -o common.zip && 
@@ -168,7 +168,7 @@ jobs:
           echo "CCACHE_REAL_KEY=$CCACHE_REAL_KEY" >> $GITHUB_ENV
 
       - name: 载入当前版本内核的 ccache缓存
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: ccache-restore
         with:
           path: ${{ env.CCACHE_DIR }}
@@ -204,7 +204,7 @@ jobs:
           fi
 
       - name: 清除旧 ccache 缓存
-        if: inputs.ccache_update == true
+        if: inputs.ccache_update
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -277,7 +277,7 @@ jobs:
           fi
 
       - name: 应用 KernelSU & SUSFS 补丁
-        if: inputs.susfs_enable == true
+        if: inputs.susfs_enable
         run: |
           cd kernel_workspace
           if [[ ${{ github.event.inputs.ksu_type }} != "none" ]]; then
@@ -302,20 +302,20 @@ jobs:
           fi
           
       - name: 应用lz4 1.10.0 & zstd 1.5.7补丁
-        if: inputs.lz4_enable == true
+        if: inputs.lz4_enable
         run: |
           echo "正在添加lz4 1.10.0 & zstd 1.5.7补丁…"
           cd kernel_workspace
-          git clone --depth=1 https://github.com/$GITHUB_REPOSITORY.git -b $GITHUB_REF_NAME patch_repo
-          cp ./patch_repo/zram_patch/001-lz4.patch ./common/
-          cp ./patch_repo/zram_patch/lz4armv8.S ./common/lib
-          cp ./patch_repo/zram_patch/002-zstd.patch ./common/
+          git clone --depth=1 https://github.com/$GITHUB_REPOSITORY.git -b $GITHUB_REF_NAME $GITHUB_ACTOR
+          cp ./$GITHUB_ACTOR/zram_patch/001-lz4.patch ./common/
+          cp ./$GITHUB_ACTOR/zram_patch/lz4armv8.S ./common/lib
+          cp ./$GITHUB_ACTOR/zram_patch/002-zstd.patch ./common/
           cd ./common
           git apply -p1 < 001-lz4.patch || true
           patch -p1 < 002-zstd.patch || true
 
       - name: 应用 lz4kd 补丁
-        if: inputs.lz4kd_enable == true
+        if: inputs.lz4kd_enable
         run: |
           echo "正在添加lz4kd补丁…"
           cd kernel_workspace
@@ -330,7 +330,7 @@ jobs:
           patch -p1 -F 3 < lz4kd.patch || true
           
       - name: 添加SUSFS 配置项
-        if: inputs.susfs_enable == true
+        if: inputs.susfs_enable
         run: |
           cd kernel_workspace
           echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -370,10 +370,32 @@ jobs:
           echo "CONFIG_HEADERS_INSTALL=n" >> ./common/arch/arm64/configs/gki_defconfig
           cd common
           wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/other_patch/cve-2026-43499-rtmutex-6.1.patch
-          patch -p1 -F 3 < cve-2026-43499-rtmutex-6.1.patch || true
+          patch -p1 -F 3 < cve-2026-43499-rtmutex-6.1.patch
+
+      - name: 添加 Atheros & 无线驱动 Module 内核配置
+        run: |
+          cd kernel_workspace
+          echo "正在写入 Atheros & 802.11 模块内核配置..."
+          echo "CONFIG_MODULES=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #echo "CONFIG_MODULE_UNLOAD=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_NET_RADIO=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_WLAN=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CFG80211=m" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_MAC80211=m" >> ./common/arch/arm64/configs/gki_defconfig
+          #echo "CONFIG_MAC80211_MESH=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_WLAN_VENDOR_ATH=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH_COMMON=m" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH10K=m" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH9K=m" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH9K_HW=m" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH9K_HTC=m" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH9K_COMMON=m" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH10K_USB=m" >> ./common/arch/arm64/configs/gki_defconfig
+          #echo "CONFIG_ATH12K=m" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_FW_LOADER=y" >> ./common/arch/arm64/configs/gki_defconfig
           
       - name: 启用网络功能增强优化配置
-        if: inputs.better_net == true
+        if: inputs.better_net
         run: |
           cd kernel_workspace
           echo "CONFIG_BPF_STREAM_PARSER=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -458,27 +480,8 @@ jobs:
             fi
           fi
 
-      - name: 添加 Atheros & 无线驱动 Module 内核配置
-        run: |
-          cd kernel_workspace
-          echo "正在写入 Atheros & 802.11 模块内核配置..."
-          echo "CONFIG_MODULES=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_NET_RADIO=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_WLAN=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CFG80211=m" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_MAC80211=m" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_WLAN_VENDOR_ATH=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ATH_COMMON=m" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ATH10K=m" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ATH9K=m" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ATH9K_HW=m" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ATH9K_HTC=m" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ATH9K_COMMON=m" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ATH10K_USB=m" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_FW_LOADER=y" >> ./common/arch/arm64/configs/gki_defconfig
-          
       - name: 启用三星SSG IO调度器
-        if: inputs.ssg_enable == true
+        if: inputs.ssg_enable
         run: |
           echo "正在启用三星SSG IO调度器…"
           cd kernel_workspace
@@ -486,16 +489,16 @@ jobs:
           echo "CONFIG_MQ_IOSCHED_SSG_CGROUP=y" >> ./common/arch/arm64/configs/gki_defconfig
 
       - name: 启用Re-Kernel支持
-        if: inputs.rekernel_enable == true
+        if: inputs.rekernel_enable
         run: |
           echo "正在启用Re-Kernel支持…"
           cd kernel_workspace
           echo "CONFIG_REKERNEL=y" >> ./common/arch/arm64/configs/gki_defconfig
 
       - name: 启用内核级基带保护
-        if: inputs.baseband_guard == true
+        if: inputs.baseband_guard
         run: |
-          echo "正在启用内核级基带保护支持…"
+          echo "正在启用启用内核级基带保护支持…"
           cd kernel_workspace
           echo "CONFIG_BBG=y" >> ./common/arch/arm64/configs/gki_defconfig
           cd ./common
@@ -543,20 +546,15 @@ jobs:
           echo "sloppiness = file_stat_matches,include_file_ctime,include_file_mtime,pch_defines,file_macro,time_macros" >> "$CCACHE_DIR/ccache.conf"
           
           cd kernel_workspace/common
-          wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/lib/libfakestat.so || true
-          wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/lib/libfaketimeMT.so || true
-          chmod 777 ./*.so || true
+          wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/lib/libfakestat.so
+          wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/lib/libfaketimeMT.so
+          chmod 777 ./*.so
           export FAKESTAT="2025-05-25 12:00:00"
           export FAKETIME="@2025-05-25 13:00:00"
           echo "FAKESTAT=$FAKESTAT" >> $GITHUB_ENV
           echo "FAKETIME=$FAKETIME" >> $GITHUB_ENV
           SO_DIR=$(pwd)
-          
-          if [[ -f "$SO_DIR/libfakestat.so" && -f "$SO_DIR/libfaketimeMT.so" ]]; then
-            export PRELOAD_LIBS="$SO_DIR/libfakestat.so $SO_DIR/libfaketimeMT.so"
-          else
-            export PRELOAD_LIBS=""
-          fi
+          export PRELOAD_LIBS="$SO_DIR/libfakestat.so $SO_DIR/libfaketimeMT.so"
 
           echo '#!/bin/bash' > cc-wrapper
           echo 'export LD_PRELOAD="'$PRELOAD_LIBS'"' >> cc-wrapper
@@ -578,43 +576,36 @@ jobs:
           echo 'echo ">>> Wrapper 内部环境检查完毕."' >> test-wrapper.sh
           echo 'exec "$@"' >> test-wrapper.sh
           chmod +x test-wrapper.sh
-          echo "--- [Wrapper Test] 正在测试 (date) 命令 ---"
           ./test-wrapper.sh date
-          echo "--- [Wrapper Test] 正在测试 (stat) 命令 ---"
           ./test-wrapper.sh stat ./Makefile
-          echo "--- [Wrapper Test] 测试完毕 ---"
           chmod +x cc-wrapper ld-wrapper
-          echo "--- 编译前环境时间: $(LD_PRELOAD=$PRELOAD_LIBS date) ---"
-          echo "--- 编译前环境文件时间戳: ---"
-          LD_PRELOAD=$PRELOAD_LIBS stat ./Makefile
           
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf /opt/ghc
-          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo rm -rf /usr/share/dotnet &
+          sudo rm -rf /usr/local/lib/android &
+          sudo rm -rf /opt/ghc &
+          sudo rm -rf /opt/hostedtoolcache/CodeQL &
           
+          # 1. 生成 defconfig
           make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD="ld.lld" HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error gki_defconfig &&
+          # 2. 编译 Image 镜像与 driver modules
           make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="$(pwd)/cc-wrapper" LD="$(pwd)/ld-wrapper" HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error Image modules &&
-          make LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="$(pwd)/cc-wrapper" LD="$(pwd)/ld-wrapper" HOSTLD=ld.lld O=out INSTALL_MOD_PATH=$(pwd)/../modules_out modules_install
+          # 3. 安装导出的所有模块文件到独立输出文件夹
+          mkdir -p "$WORKDIR/kernel_workspace/modules_out" &&
+          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="$(pwd)/cc-wrapper" LD="$(pwd)/ld-wrapper" HOSTLD=ld.lld O=out INSTALL_MOD_PATH="$WORKDIR/kernel_workspace/modules_out" modules_install
           
-          echo "--- 编译后环境时间: $(LD_PRELOAD=$PRELOAD_LIBS date) ---"
-          echo "--- 编译后环境文件时间戳: ---"
-          LD_PRELOAD=$PRELOAD_LIBS stat ./Makefile
-          echo "内核编译完成！"
-          echo "ccache状态："
+          echo "内核及驱动模块编译完成！"
           ccache -s
-          echo "编译后空间:"
           df -h
 
       - name: 保存新的 ccache 缓存
-        if: inputs.ccache_update == true || steps.ccache-restore.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        if: inputs.ccache_update || steps.ccache-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.CCACHE_REAL_KEY }}-${{ runner.os }}-${{ github.ref_name }}
          
       - name: 应用KPM并修补内核
-        if: inputs.kpm_enable == true
+        if: inputs.kpm_enable
         run: |
           echo "正在应用KP-N并修补内核..."
           cd kernel_workspace/common/out/arch/arm64/boot
@@ -638,13 +629,11 @@ jobs:
             exit 1
           fi
 
+          # 打包已编译的 driver modules 写入 AnyKernel3
           echo "正在将编译完成的 .ko 模块拷贝进 AnyKernel3 打包目录..."
           mkdir -p ./modules/vendor/lib/modules
-          if [[ -d "../modules_out" ]]; then
-            find ../modules_out/ -type f -name "*.ko" -exec cp {} ./modules/vendor/lib/modules/ \;
-            ${{ github.workspace }}/kernel_workspace/clang20/bin/llvm-strip --strip-unneeded ./modules/vendor/lib/modules/*.ko || true
-          fi
-          
+          find ../modules_out/ -name "*.ko" -exec cp {} ./modules/vendor/lib/modules/ \;
+
           if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
             KSU_TYPENAME="SukiSU"
           elif [[ ${{ github.event.inputs.ksu_type }} == "resukisu" ]]; then
@@ -698,17 +687,18 @@ jobs:
           zip -z ../$AK3_NAME < ./ak3.log
 
       - name: 上传 Ccache 调试日志
-        if: always() && inputs.ccache_debug == true
-        uses: actions/upload-artifact@v4
+        if: always() && inputs.ccache_debug
+        uses: actions/upload-artifact@v7
         with:
           name: ccache-debug-log
           path: ${{ github.workspace }}/kernel_workspace/ccache.log
+          archive: true
 
       - name: 上传 ZIP 工件
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: ${{ steps.create_zip.outputs.ak3name }}
           path: ${{ github.workspace }}/kernel_workspace/AnyKernel*.zip
+          archive: false
 
   release:
     needs: build
@@ -720,10 +710,11 @@ jobs:
       
     steps:
       - name: 下载 ZIP 工件
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ${{ needs.build.outputs.ak3name }}
           path: ./release_zips
+          skip-decompress: true
 
       - name: 设置环境变量
         run: |
@@ -783,17 +774,14 @@ jobs:
           
           ### ⏫️ 更新内容：
           - 更新${{ env.KSU_TYPENAME }}至最新版本（${{ needs.build.outputs.ksuver }}）
-          - (预留)
+          - 自动编译并引入 Atheros 及 mac80211/cfg80211 驱动模块 (.ko)
           
           ### 📋 安装方法 | Installation Guide
           1. 若你的手机已经安装了第三方Recovery（如TWRP)，可下载对应机型的AnyKernel刷机包后进入Recovery模式，通过Recovery刷入刷机包后重启设备；
           2. 若你的手机之前已有 root 权限，可在手机上安装[HorizonKernelFlasher](https://github.com/libxzr/HorizonKernelFlasher/releases)，在HorizonKernelFlasher中刷入AnyKernel刷机包并重启；
           3. 若你之前已刷入SukiSU Ultra内核，且SukiSU Ultra管理器已更新至最新版本，可在SukiSU Ultra管理器中直接刷入AnyKernel刷机包并重启；
           4. 刷入无lz4kd补丁版的内核前若刷入过lz4kd补丁版的内核，为避免出错，请先关闭zram模块；
-          5. 由于KernelSU上游更新了元模块功能，最新版KSU管理器（包括除KernelSU Next以外的各分支）需要配合元模块(metamodule)才能正常挂载模块。目前的元模块包括[meta overlayfs](https://github.com/KernelSU-Modules-Repo/meta-overlayfs), [mountify](https://github.com/backslashxx/mountify), [meta magicmount](https://github.com/7a72/meta-magic_mount/), [meta magicmount rs](https://github.com/Tools-cx-app/meta-magic_mount/), [hybrid mount](https://github.com/YuzakiKokuban/meta-hybrid_mount)等。若你是第一次使用KSU或刚从旧版KSU管理器升级至新版，请先安装一个元模块，这样其他涉及系统挂载的模块才能正常运行；
-          6. KernelPatch Next（即KPN）是一个独立于KSU的KPM实现，可以运行在任意KSU/面具环境中（不适用于Apatch），且不能与(Re)SukiSU内置的kpm功能共同使用，使用前请保证你的内核没有内置的kpm实现/修补。
-          
-          #### ※※※刷写内核有风险，为防止出现意外导致手机变砖，在刷入内核前请务必用[KernelFlasher](https://github.com/capntrips/KernelFlasher)等软件备份boot等关键启动分区!※※※
+          5. 由于KernelSU上游更新了元模块功能，最新版KSU管理器（包括除KernelSU Next以外的各分支）需要配合元模块(metamodule)才能正常挂载模块。
           EOF
 
           gh release create "${{ env.TAG_HEAD }}-${{ env.TIME }}" \
