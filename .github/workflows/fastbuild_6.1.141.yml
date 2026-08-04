@@ -690,6 +690,13 @@ jobs:
             echo "未找到内核镜像文件，构建可能出错"
             exit 1
           fi
+            
+
+            # 打包已编译的 driver modules 写入 AnyKernel3
+          echo "正在将编译完成的 .ko 模块拷贝进 AnyKernel3 打包目录..."
+          mkdir -p ./modules/vendor/lib/modules
+          find ../modules_out/ -name "*.ko" -exec cp {} ./modules/vendor/lib/modules/ \;
+          
           if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
             KSU_TYPENAME="SukiSU"
           elif [[ ${{ github.event.inputs.ksu_type }} == "resukisu" ]]; then
