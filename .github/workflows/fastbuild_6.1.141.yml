@@ -523,14 +523,14 @@ jobs:
           echo "CONFIG_CFG80211=m" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_MAC80211=m" >> ./common/arch/arm64/configs/gki_defconfig
           #echo "CONFIG_MAC80211_MESH=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_WLAN_VENDOR_ATH=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_ATH_CARDS=m" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_WLAN_VENDOR_ATH=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH_COMMON=m" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_ATH10K=m" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_ATH10K_PCI=m" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_ATH10K_AHB=m" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_ATH11K=m" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_ATH11K_PCI=m" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_ATH11K_AHB=m" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH9K=m" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH9K_HW=m" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH9K_HTC=m" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH9K_COMMON=m" >> ./common/arch/arm64/configs/gki_defconfig
+          #echo "CONFIG_ATH10K_USB=m" >> ./common/arch/arm64/configs/gki_defconfig
           #echo "CONFIG_ATH12K=m" >> ./common/arch/arm64/configs/gki_defconfig
           #echo "CONFIG_FW_LOADER=y" >> ./common/arch/arm64/configs/gki_defconfig
           
