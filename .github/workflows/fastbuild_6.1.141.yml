@@ -588,12 +588,14 @@ jobs:
           echo "--- 编译前环境文件时间戳: ---"
           LD_PRELOAD=$PRELOAD_LIBS stat ./Makefile
           
-          sudo rm -rf /usr/share/dotnet &
-          sudo rm -rf /usr/local/lib/android &
-          sudo rm -rf /opt/ghc &
-          sudo rm -rf /opt/hostedtoolcache/CodeQL &
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          
           make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD="ld.lld" HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error gki_defconfig &&
-          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="$(pwd)/cc-wrapper" LD="$(pwd)/ld-wrapper" HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error Image
+          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="$(pwd)/cc-wrapper" LD="$(pwd)/ld-wrapper" HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error Image modules &&
+          make LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="$(pwd)/cc-wrapper" LD="$(pwd)/ld-wrapper" HOSTLD=ld.lld O=out INSTALL_MOD_PATH=$(pwd)/../modules_out modules_install
           
           echo "--- 编译后环境时间: $(LD_PRELOAD=$PRELOAD_LIBS date) ---"
           echo "--- 编译后环境文件时间戳: ---"
@@ -639,7 +641,8 @@ jobs:
           echo "正在将编译完成的 .ko 模块拷贝进 AnyKernel3 打包目录..."
           mkdir -p ./modules/vendor/lib/modules
           if [[ -d "../modules_out" ]]; then
-            find ../modules_out/ -name "*.ko" -exec cp {} ./modules/vendor/lib/modules/ \;
+            find ../modules_out/ -type f -name "*.ko" -exec cp {} ./modules/vendor/lib/modules/ \;
+            ${{ github.workspace }}/kernel_workspace/clang20/bin/llvm-strip --strip-unneeded ./modules/vendor/lib/modules/*.ko || true
           fi
           
           if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
