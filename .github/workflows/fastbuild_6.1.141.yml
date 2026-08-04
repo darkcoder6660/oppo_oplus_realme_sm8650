@@ -379,18 +379,19 @@ jobs:
           #echo "CONFIG_MODULE_UNLOAD=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_NET_RADIO=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_WLAN=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CFG80211=m" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_MAC80211=m" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CFG80211=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_MAC80211=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_MAC80211_LEDS=y" >> ./common/arch/arm64/configs/gki_defconfig
           #echo "CONFIG_MAC80211_MESH=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_WLAN_VENDOR_ATH=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ATH_COMMON=m" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ATH10K=m" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ATH9K=m" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ATH9K_HW=m" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ATH9K_HTC=m" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ATH9K_COMMON=m" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ATH10K_USB=m" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_ATH12K=m" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH_COMMON=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH10K=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH9K=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH9K_HW=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH9K_HTC=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH9K_COMMON=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH10K_USB=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #echo "CONFIG_ATH12K=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_FW_LOADER=y" >> ./common/arch/arm64/configs/gki_defconfig
           
       - name: 启用网络功能增强优化配置
