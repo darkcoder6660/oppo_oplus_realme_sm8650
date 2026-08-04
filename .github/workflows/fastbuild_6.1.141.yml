@@ -485,6 +485,11 @@ jobs:
             echo "CONFIG_IPC_NS=y" >> ./arch/arm64/configs/gki_defconfig
             echo "CONFIG_USER_NS=y" >> ./arch/arm64/configs/gki_defconfig
             echo "CONFIG_SYSVIPC=y" >> ./arch/arm64/configs/gki_defconfig
+            echo "CONFIG_CFG80211=m" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_MAC80211=m" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_MAC80211_MESH=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_WLAN_VENDOR_ATH=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_ATH12K=m" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_DEVTMPFS=y" >> ./arch/arm64/configs/gki_defconfig
             echo "CONFIG_NAMESPACES=y" >> ./arch/arm64/configs/gki_defconfig
             echo "CONFIG_POSIX_MQUEUE=y" >> ./arch/arm64/configs/gki_defconfig
@@ -509,11 +514,7 @@ jobs:
               wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/droidspaces_patch/evdi_drm.patch
               patch -p1 -F 3 < evdi_drm.patch || true
               echo "CONFIG_DRM_LINDROID_EVDI=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_CFG80211=m" >> ./common/arch/arm64/configs/gki_defconfig
-              echo "CONFIG_MAC80211=m" >> ./common/arch/arm64/configs/gki_defconfig
-              echo "CONFIG_MAC80211_MESH=y" >> ./common/arch/arm64/configs/gki_defconfig
-              echo "CONFIG_WLAN_VENDOR_ATH=y" >> ./common/arch/arm64/configs/gki_defconfig
-              echo "CONFIG_ATH12K=m" >> ./common/arch/arm64/configs/gki_defconfig
+              
             fi
           fi
 
