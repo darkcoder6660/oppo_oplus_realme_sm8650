@@ -463,7 +463,15 @@ jobs:
               echo "CONFIG_DEFAULT_TCP_CONG=cubic" >> ./common/arch/arm64/configs/gki_defconfig
             fi
           fi
-
+     - name: 添加 Atheros & 无线驱动 Module 内核配置
+        run: |
+          cd kernel_workspace
+             echo "CONFIG_CFG80211=m" >> ./common/arch/arm64/configs/gki_defconfig
+             echo "CONFIG_MAC80211=m" >> ./common/arch/arm64/configs/gki_defconfig
+             echo "CONFIG_MAC80211_MESH=y" >> ./common/arch/arm64/configs/gki_defconfig
+             echo "CONFIG_WLAN_VENDOR_ATH=y" >> ./common/arch/arm64/configs/gki_defconfig
+             echo "CONFIG_ATH12K=m" >> ./common/arch/arm64/configs/gki_defconfig
+             
       - name: 启用 Droidspaces 容器支持
         run: |
           if [[ "${{ github.event.inputs.droidspaces_enable }}" != "false" ]]; then
@@ -492,19 +500,6 @@ jobs:
             echo "CONFIG_NETFILTER_XT_TARGET_LOG=y" >> ./arch/arm64/configs/gki_defconfig
             echo "CONFIG_NETFILTER_XT_MATCH_RECENT=y" >> ./arch/arm64/configs/gki_defconfig
             # 未经测试的配置选项，可能导致bug
-            echo "CONFIG_WLAN=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_CFG80211=m" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_MAC80211=m" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_MAC80211_MESH=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_WLAN_VENDOR_ATH=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_ATH_CARDS=m" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_ATH10K=m" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_ATH10K_PCI=m" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_ATH10K_AHB=m" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_ATH11K=m" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_ATH11K_PCI=m" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_ATH11K_AHB=m" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_ATH12K=m" >> ./common/arch/arm64/configs/gki_defconfig
             #echo "CONFIG_CGROUP_DEVICE=y" >> ./arch/arm64/configs/gki_defconfig
             #echo "CONFIG_CGROUP_PIDS=y" >> ./arch/arm64/configs/gki_defconfig
             #echo "CONFIG_FW_LOADER_COMPRESS=y" >> ./arch/arm64/configs/gki_defconfig
