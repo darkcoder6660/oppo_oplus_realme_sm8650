@@ -485,11 +485,6 @@ jobs:
             echo "CONFIG_IPC_NS=y" >> ./arch/arm64/configs/gki_defconfig
             echo "CONFIG_USER_NS=y" >> ./arch/arm64/configs/gki_defconfig
             echo "CONFIG_SYSVIPC=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_CFG80211=m" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_MAC80211=m" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_MAC80211_MESH=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_WLAN_VENDOR_ATH=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_ATH12K=m" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_DEVTMPFS=y" >> ./arch/arm64/configs/gki_defconfig
             echo "CONFIG_NAMESPACES=y" >> ./arch/arm64/configs/gki_defconfig
             echo "CONFIG_POSIX_MQUEUE=y" >> ./arch/arm64/configs/gki_defconfig
@@ -517,7 +512,28 @@ jobs:
               
             fi
           fi
-
+      - name: 添加 Atheros & 无线驱动 Module 内核配置
+        run: |
+          cd kernel_workspace
+          echo "正在写入 Atheros & 802.11 模块内核配置..."
+          #echo "CONFIG_MODULES=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #echo "CONFIG_MODULE_UNLOAD=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #echo "CONFIG_NET_RADIO=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #echo "CONFIG_WLAN=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CFG80211=m" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_MAC80211=m" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_MAC80211_MESH=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_WLAN_VENDOR_ATH=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #echo "CONFIG_ATH_CARDS=m" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH10K=m" >> ./common/arch/arm64/configs/gki_defconfig
+          #echo "CONFIG_ATH10K_PCI=m" >> ./common/arch/arm64/configs/gki_defconfig
+          #echo "CONFIG_ATH10K_AHB=m" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH11K=m" >> ./common/arch/arm64/configs/gki_defconfig
+          #echo "CONFIG_ATH11K_PCI=m" >> ./common/arch/arm64/configs/gki_defconfig
+          #echo "CONFIG_ATH11K_AHB=m" >> ./common/arch/arm64/configs/gki_defconfig
+          #echo "CONFIG_ATH12K=m" >> ./common/arch/arm64/configs/gki_defconfig
+          #echo "CONFIG_FW_LOADER=y" >> ./common/arch/arm64/configs/gki_defconfig
+          
       - name: 启用三星SSG IO调度器
         if: inputs.ssg_enable
         run: |
