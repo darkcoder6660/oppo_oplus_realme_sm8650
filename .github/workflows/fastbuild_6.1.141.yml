@@ -374,6 +374,11 @@ jobs:
       - name: 添加 Atheros & 无线驱动 Module 内核配置
         run: |
           cd kernel_workspace
+          # 1. Delete existing matching configurations to prevent conflicts
+          sed -i '/CONFIG_CFG80211/d' ./common/arch/arm64/configs/gki_defconfig
+          sed -i '/CONFIG_MAC80211/d' ./common/arch/arm64/configs/gki_defconfig
+          sed -i '/CONFIG_ATH/d' ./common/arch/arm64/configs/gki_defconfig
+          sed -i '/CONFIG_WLAN_VENDOR_ATH/d' ./common/arch/arm64/configs/gki_defconfig
           echo "正在写入 Atheros & 802.11 模块内核配置..."
           echo "CONFIG_MODULES=y" >> ./common/arch/arm64/configs/gki_defconfig
           #echo "CONFIG_MODULE_UNLOAD=y" >> ./common/arch/arm64/configs/gki_defconfig
