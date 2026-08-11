@@ -744,8 +744,6 @@ jobs:
             KSU_TYPENAME="无内置KSU"
           fi
           echo "KSU_TYPENAME=$KSU_TYPENAME" >> $GITHUB_ENV
-         
-      - name: 创建发布
             
       - name: 创建发布
         id: create_release
