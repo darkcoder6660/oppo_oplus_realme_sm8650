@@ -212,7 +212,7 @@ jobs:
             echo "成功删除旧的 ccache 缓存！"
           else
             echo "旧缓存不存在或已被清理！"
-          fi
+          `fi
       
       - name: 初始化并配置ccache
         run: |
@@ -576,14 +576,13 @@ jobs:
           ccache -s
           df -h
 
-      - name: 编译独立无线网卡驱动 (Linux Backports)[span_3](start_span)[span_3](end_span)
+      - name: 编译独立无线网卡驱动 (Linux Backports)
         run: |
           WORKDIR="$(pwd)"
           cd kernel_workspace
-          echo "正在下载 Linux Backports v6.1..."
-          aria2c -s16 -x16 -k1M https://mirrors.edge.kernel.org/pub/linux/kernel/projects/backports/stable/v6.1.1/backports-6.1.1-1.tar.gz -o backports.tar.gz || wget https://mirrors.edge.kernel.org/pub/linux/kernel/projects/backports/stable/v6.1.1/backports-6.1.1-1.tar.gz -O backports.tar.gz
-          tar -xf backports.tar.gz
-          cd backports-6.1.1-1
+          echo "正在克隆 Linux Backports 官方仓库..."
+          git clone --depth=1 https://git.kernel.org/pub/scm/linux/kernel/git/backports/backports.git backports
+          cd backports
 
           echo "配置 Backports 编译环境..."
           make defconfig-ath9k KLIB_BUILD=$WORKDIR/kernel_workspace/common/out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="$WORKDIR/kernel_workspace/common/cc-wrapper" LD="$WORKDIR/kernel_workspace/common/ld-wrapper"
@@ -744,7 +743,7 @@ jobs:
             KSU_TYPENAME="无内置KSU"
           fi
           echo "KSU_TYPENAME=$KSU_TYPENAME" >> $GITHUB_ENV
-            
+         
       - name: 创建发布
         id: create_release
         env:
