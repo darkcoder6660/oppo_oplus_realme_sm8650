@@ -212,7 +212,7 @@ jobs:
             echo "成功删除旧的 ccache 缓存！"
           else
             echo "旧缓存不存在或已被清理！"
-          `fi
+          fi
       
       - name: 初始化并配置ccache
         run: |
@@ -370,6 +370,50 @@ jobs:
           cd common
           wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/other_patch/cve-2026-43499-rtmutex-6.1.patch
           patch -p1 -F 3 < cve-2026-43499-rtmutex-6.1.patch
+
+      - name: 添加 Atheros & 无线驱动 Module 内核配置
+        run: |
+          cd kernel_workspace
+          # 1. Delete existing matching configurations to prevent conflicts
+          sed -i '/CONFIG_CFG80211/d' ./common/arch/arm64/configs/gki_defconfig
+          sed -i '/CONFIG_MAC80211/d' ./common/arch/arm64/configs/gki_defconfig
+          sed -i '/CONFIG_ATH/d' ./common/arch/arm64/configs/gki_defconfig
+          sed -i '/CONFIG_WLAN_VENDOR_ATH/d' ./common/arch/arm64/configs/gki_defconfig
+          echo "正在写入 Atheros & 802.11 模块内核配置..."
+          echo "CONFIG_MODULES=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_MODULE_UNLOAD=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_NET_RADIO=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_WLAN=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # cfg80211 保持内置(=y)，与 stock 内核符号兼容，qca_cld3_kiwi_v2 直接链接它，不参与本次热替换
+          echo "CONFIG_CFG80211=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # mac80211 及整条 ath9k 驱动链改为可加载模块(=m)，用于运行时 rmmod/insmod 替换
+          echo "CONFIG_MAC80211=m" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_MAC80211_LEDS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #echo "CONFIG_MAC80211_MESH=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_WLAN_VENDOR_ATH=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH_COMMON=m" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH10K=m" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH9K=m" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH9K_HW=m" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH9K_HTC=m" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH9K_COMMON=m" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH10K_USB=m" >> ./common/arch/arm64/configs/gki_defconfig
+          #echo "CONFIG_ATH12K=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_FW_LOADER=y" >> ./common/arch/arm64/configs/gki_defconfig
+
+      - name: 启用自定义 .ko 驱动模块强制加载支持
+        run: |
+          cd kernel_workspace
+          # 1. 移除可能冲突的已有配置项
+          sed -i '/CONFIG_MODVERSIONS/d' ./common/arch/arm64/configs/gki_defconfig
+          sed -i '/CONFIG_MODULE_SIG/d' ./common/arch/arm64/configs/gki_defconfig
+          sed -i '/CONFIG_MODULE_FORCE_LOAD/d' ./common/arch/arm64/configs/gki_defconfig
+          sed -i '/CONFIG_MODULE_ALLOW_MISSING_NAMESPACE_IMPORTS/d' ./common/arch/arm64/configs/gki_defconfig
+          echo "正在写入自定义 .ko 驱动模块强制加载所需配置..."
+          echo "CONFIG_MODVERSIONS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "# CONFIG_MODULE_SIG is not set" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_MODULE_ALLOW_MISSING_NAMESPACE_IMPORTS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_MODULE_FORCE_LOAD=y" >> ./common/arch/arm64/configs/gki_defconfig
 
       - name: 启用网络功能增强优化配置
         if: inputs.better_net
@@ -562,38 +606,17 @@ jobs:
           sudo rm -rf /opt/ghc &
           sudo rm -rf /opt/hostedtoolcache/CodeQL &
           
-          # 1. 生成基础 defconfig (保持完全稳定和干净，不强制覆盖无线栈)
+          # 1. 生成 defconfig
           make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD="ld.lld" HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error gki_defconfig &&
-          
-          # 2. 编译核心 Image 镜像与原生模块
+          # 2. 编译 Image 镜像与 driver modules
           make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="$(pwd)/cc-wrapper" LD="$(pwd)/ld-wrapper" HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error Image modules &&
-          
-          # 3. 安装模块文件到输出文件夹
+          # 3. 安装导出的所有模块文件到独立输出文件夹
           mkdir -p "$WORKDIR/kernel_workspace/modules_out" &&
           make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="$(pwd)/cc-wrapper" LD="$(pwd)/ld-wrapper" HOSTLD=ld.lld O=out INSTALL_MOD_PATH="$WORKDIR/kernel_workspace/modules_out" modules_install
           
-          echo "内核及原生驱动模块编译完成！"
+          echo "内核及驱动模块编译完成！"
           ccache -s
           df -h
-
-      - name: 编译独立无线网卡驱动 (Linux Backports)
-        run: |
-          WORKDIR="$(pwd)"
-          cd kernel_workspace
-          echo "正在克隆 Linux Backports 官方仓库..."
-          git clone --depth=1 https://git.kernel.org/pub/scm/linux/kernel/git/backports/backports.git backports
-          cd backports
-
-          echo "配置 Backports 编译环境..."
-          make defconfig-ath9k KLIB_BUILD=$WORKDIR/kernel_workspace/common/out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="$WORKDIR/kernel_workspace/common/cc-wrapper" LD="$WORKDIR/kernel_workspace/common/ld-wrapper"
-          
-          echo "编译独立的 Atheros 驱动模块..."
-          make -j$(nproc --all) KLIB_BUILD=$WORKDIR/kernel_workspace/common/out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="$WORKDIR/kernel_workspace/common/cc-wrapper" LD="$WORKDIR/kernel_workspace/common/ld-wrapper" modules
-          
-          echo "收集中转编译完成的 Backports 独立网卡模块..."
-          mkdir -p "$WORKDIR/kernel_workspace/modules_out/vendor/lib/modules"
-          find . -name "*.ko" -exec cp {} "$WORKDIR/kernel_workspace/modules_out/vendor/lib/modules/" \;
-          echo "Backports 模块收集完毕！"
 
       - name: 保存新的 ccache 缓存
         if: inputs.ccache_update || steps.ccache-restore.outputs.cache-hit != 'true'
@@ -627,7 +650,7 @@ jobs:
             exit 1
           fi
 
-          # 打包已编译的 driver modules 写入 AnyKernel3 (包含原生模块及 Backports 独立模块)
+          # 打包已编译的 driver modules 写入 AnyKernel3
           echo "正在将编译完成的 .ko 模块拷贝进 AnyKernel3 打包目录..."
           mkdir -p ./modules/vendor/lib/modules
           find ../modules_out/ -name "*.ko" -exec cp {} ./modules/vendor/lib/modules/ \;
@@ -772,7 +795,7 @@ jobs:
           
           ### ⏫️ 更新内容：
           - 更新${{ env.KSU_TYPENAME }}至最新版本（${{ needs.build.outputs.ksuver }}）
-          - 集成 Linux Backports 独立网卡驱动模块（适配 Atheros AR9271 / ath9k_htc）
+          - 自动编译并引入 Atheros 及 mac80211/cfg80211 驱动模块 (.ko)
           
           ### 📋 安装方法 | Installation Guide
           1. 若你的手机已经安装了第三方Recovery（如TWRP)，可下载对应机型的AnyKernel刷机包后进入Recovery模式，通过Recovery刷入刷机包后重启设备；
