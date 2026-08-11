@@ -219,7 +219,7 @@ jobs:
           export CCACHE_COMPILERCHECK="none"
           export CCACHE_BASEDIR="${{ github.workspace }}"
           export CCACHE_NOHASHDIR="true"
-          export CCACHE_NOHARDLINK="true"
+          export CCACHE_NOHHARDLINK="true"
           export CCACHE_DIR="${{ env.CCACHE_DIR }}"
           export CCACHE_MAXSIZE="${{ env.CCACHE_MAXSIZE }}"
           
@@ -374,31 +374,38 @@ jobs:
       - name: 添加 Atheros & 无线驱动 Module 内核配置
         run: |
           cd kernel_workspace
-          # 1. Delete existing matching configurations to prevent conflicts
+          echo "正在清理旧的无线和底层依赖配置，防止 Kconfig 自动降级为 =m..."
+          # 深度清理任何可能导致冲突降级的配置
           sed -i '/CONFIG_CFG80211/d' ./common/arch/arm64/configs/gki_defconfig
           sed -i '/CONFIG_MAC80211/d' ./common/arch/arm64/configs/gki_defconfig
           sed -i '/CONFIG_ATH/d' ./common/arch/arm64/configs/gki_defconfig
           sed -i '/CONFIG_WLAN_VENDOR_ATH/d' ./common/arch/arm64/configs/gki_defconfig
-          echo "正在写入 Atheros & 802.11 模块内核配置..."
+          sed -i '/CONFIG_RFKILL/d' ./common/arch/arm64/configs/gki_defconfig
+          
+          echo "强制写入底层核心依赖为 Built-in (=y)..."
+          # 核心修复：如果 RFKILL 是 =m，那么整个 mac80211 和 ath9k 都会被迫降级成 =m！这是导致你失败的最关键原因。
+          echo "CONFIG_RFKILL=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_USB=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_NEW_LEDS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_LEDS_CLASS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          
+          echo "正在强制写入 Atheros & 802.11 模块内核配置为 Built-in (=y)..."
           echo "CONFIG_MODULES=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_MODULE_UNLOAD=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_NET_RADIO=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_WLAN=y" >> ./common/arch/arm64/configs/gki_defconfig
-          # cfg80211 保持内置(=y)，与 stock 内核符号兼容，qca_cld3_kiwi_v2 直接链接它，不参与本次热替换
           echo "CONFIG_CFG80211=y" >> ./common/arch/arm64/configs/gki_defconfig
-          # mac80211 及整条 ath9k 驱动链改为可加载模块(=m)，用于运行时 rmmod/insmod 替换
-          echo "CONFIG_MAC80211=m" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_MAC80211=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_MAC80211_LEDS=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_MAC80211_MESH=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_WLAN_VENDOR_ATH=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ATH_COMMON=m" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ATH10K=m" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ATH9K=m" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ATH9K_HW=m" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ATH9K_HTC=m" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ATH9K_COMMON=m" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ATH10K_USB=m" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_ATH12K=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH_COMMON=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH10K=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH9K=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH9K_HW=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH9K_HTC=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH9K_COMMON=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH10K_USB=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_FW_LOADER=y" >> ./common/arch/arm64/configs/gki_defconfig
 
       - name: 启用自定义 .ko 驱动模块强制加载支持
