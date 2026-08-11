@@ -1,3 +1,4 @@
+
 name: 6.1.141 欧加真OKI内核快速构建
 
 env:
@@ -374,29 +375,26 @@ jobs:
       - name: 添加 Atheros & 无线驱动 Module 内核配置
         run: |
           cd kernel_workspace
-          # 1. Delete existing matching configurations to prevent conflicts
+          # 清理旧的配置项防止冲突
           sed -i '/CONFIG_CFG80211/d' ./common/arch/arm64/configs/gki_defconfig
           sed -i '/CONFIG_MAC80211/d' ./common/arch/arm64/configs/gki_defconfig
           sed -i '/CONFIG_ATH/d' ./common/arch/arm64/configs/gki_defconfig
           sed -i '/CONFIG_WLAN_VENDOR_ATH/d' ./common/arch/arm64/configs/gki_defconfig
-          echo "正在写入 Atheros & 802.11 模块内核配置..."
-          echo "CONFIG_MODULES=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_MODULE_UNLOAD=y" >> ./common/arch/arm64/configs/gki_defconfig
+          
+          echo "正在写入 Atheros & 802.11 内置内核配置..."
           echo "CONFIG_NET_RADIO=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_WLAN=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_CFG80211=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_MAC80211=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_MAC80211_LEDS=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_MAC80211_MESH=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_WLAN_VENDOR_ATH=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_ATH_COMMON=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ATH10K=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_ATH9K=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_ATH9K_HW=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_ATH9K_HTC=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_ATH9K_COMMON=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ATH10K=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_ATH10K_USB=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_ATH12K=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_FW_LOADER=y" >> ./common/arch/arm64/configs/gki_defconfig
           
       - name: 启用网络功能增强优化配置
@@ -590,11 +588,29 @@ jobs:
           sudo rm -rf /opt/ghc &
           sudo rm -rf /opt/hostedtoolcache/CodeQL &
           
-          # 1. 生成 defconfig
-          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD="ld.lld" HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error gki_defconfig &&
-          # 2. 编译 Image 镜像与 driver modules
+          # 1. 生成基础 defconfig
+          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD="ld.lld" HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error gki_defconfig
+          
+          # 2. 强制写入 out/.config，防止 Kconfig 降级为 =m
+          ./scripts/config --file out/.config --enable CONFIG_CFG80211
+          ./scripts/config --file out/.config --enable CONFIG_MAC80211
+          ./scripts/config --file out/.config --enable CONFIG_MAC80211_LEDS
+          ./scripts/config --file out/.config --enable CONFIG_WLAN_VENDOR_ATH
+          ./scripts/config --file out/.config --enable CONFIG_ATH_COMMON
+          ./scripts/config --file out/.config --enable CONFIG_ATH9K
+          ./scripts/config --file out/.config --enable CONFIG_ATH9K_HW
+          ./scripts/config --file out/.config --enable CONFIG_ATH9K_COMMON
+          ./scripts/config --file out/.config --enable CONFIG_ATH9K_HTC
+          ./scripts/config --file out/.config --enable CONFIG_ATH10K
+          ./scripts/config --file out/.config --enable CONFIG_ATH10K_USB
+          
+          # 3. 刷新 dependencies 保证 config 生效
+          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD="ld.lld" HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error olddefconfig
+          
+          # 4. 编译 Image 镜像与 driver modules
           make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="$(pwd)/cc-wrapper" LD="$(pwd)/ld-wrapper" HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error Image modules &&
-          # 3. 安装导出的所有模块文件到独立输出文件夹
+          
+          # 5. 安装导出的所有模块文件到独立输出文件夹
           mkdir -p "$WORKDIR/kernel_workspace/modules_out" &&
           make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="$(pwd)/cc-wrapper" LD="$(pwd)/ld-wrapper" HOSTLD=ld.lld O=out INSTALL_MOD_PATH="$WORKDIR/kernel_workspace/modules_out" modules_install
           
