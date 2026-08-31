@@ -378,8 +378,6 @@ jobs:
           echo "CONFIG_MODULES=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_MODULE_UNLOAD=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_MODULE_FORCE_LOAD=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "# CONFIG_MODVERSIONS is not set" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "# CONFIG_MODULE_SIG is not set" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_NET_RADIO=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_WLAN=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_CFG80211=m" >> ./common/arch/arm64/configs/gki_defconfig
