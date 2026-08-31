@@ -219,7 +219,7 @@ jobs:
           export CCACHE_COMPILERCHECK="none"
           export CCACHE_BASEDIR="${{ github.workspace }}"
           export CCACHE_NOHASHDIR="true"
-          export CCACHE_NOHHARDLINK="true"
+          export CCACHE_NOHARDLINK="true"
           export CCACHE_DIR="${{ env.CCACHE_DIR }}"
           export CCACHE_MAXSIZE="${{ env.CCACHE_MAXSIZE }}"
           
@@ -374,27 +374,17 @@ jobs:
       - name: 添加 Atheros & 无线驱动 Module 内核配置
         run: |
           cd kernel_workspace
-          echo "正在清理旧的无线和底层依赖配置..."
-          sed -i '/CONFIG_CFG80211/d' ./common/arch/arm64/configs/gki_defconfig
-          sed -i '/CONFIG_MAC80211/d' ./common/arch/arm64/configs/gki_defconfig
-          sed -i '/CONFIG_ATH/d' ./common/arch/arm64/configs/gki_defconfig
-          sed -i '/CONFIG_WLAN_VENDOR_ATH/d' ./common/arch/arm64/configs/gki_defconfig
-          
-          # Disable KABI Trimming so the ieee80211 symbols aren't deleted by the compiler
-          echo "CONFIG_TRIM_UNUSED_KSYMS=n" >> ./common/arch/arm64/configs/gki_defconfig
-          
           echo "正在写入 Atheros & 802.11 模块内核配置..."
           echo "CONFIG_MODULES=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_MODULE_UNLOAD=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_MODULE_FORCE_LOAD=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "# CONFIG_MODVERSIONS is not set" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "# CONFIG_MODULE_SIG is not set" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_NET_RADIO=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_WLAN=y" >> ./common/arch/arm64/configs/gki_defconfig
-          
-          # Leave CFG80211 built-in (=y) so the internal Wi-Fi doesn't break
-          echo "CONFIG_CFG80211=y" >> ./common/arch/arm64/configs/gki_defconfig
-          
-          # Compile the mac80211 and Atheros stack strictly as loadable modules (=m)
+          echo "CONFIG_CFG80211=m" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_MAC80211=m" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_MAC80211_LEDS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #echo "CONFIG_MAC80211_MESH=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_WLAN_VENDOR_ATH=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_ATH_COMMON=m" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_ATH10K=m" >> ./common/arch/arm64/configs/gki_defconfig
@@ -403,26 +393,9 @@ jobs:
           echo "CONFIG_ATH9K_HTC=m" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_ATH9K_COMMON=m" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_ATH10K_USB=m" >> ./common/arch/arm64/configs/gki_defconfig
+          #echo "CONFIG_ATH12K=m" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_FW_LOADER=y" >> ./common/arch/arm64/configs/gki_defconfig
-
-      - name: 启用自定义 .ko 驱动模块强制加载支持
-        run: |
-          cd kernel_workspace
-          # 1. 移除可能冲突的已有配置项
-          sed -i '/CONFIG_MODVERSIONS/d' ./common/arch/arm64/configs/gki_defconfig
-          sed -i '/CONFIG_MODULE_SIG/d' ./common/arch/arm64/configs/gki_defconfig
-          sed -i '/CONFIG_MODULE_FORCE_LOAD/d' ./common/arch/arm64/configs/gki_defconfig
-          sed -i '/CONFIG_MODULE_ALLOW_MISSING_NAMESPACE_IMPORTS/d' ./common/arch/arm64/configs/gki_defconfig
           
-          echo "正在写入自定义 .ko 驱动模块强制加载所需配置..."
-          # Disable CRC/Version checking completely
-          echo "# CONFIG_MODVERSIONS is not set" >> ./common/arch/arm64/configs/gki_defconfig
-          # Disable cryptographic signatures
-          echo "# CONFIG_MODULE_SIG is not set" >> ./common/arch/arm64/configs/gki_defconfig
-          
-          echo "CONFIG_MODULE_ALLOW_MISSING_NAMESPACE_IMPORTS=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_MODULE_FORCE_LOAD=y" >> ./common/arch/arm64/configs/gki_defconfig
-
       - name: 启用网络功能增强优化配置
         if: inputs.better_net
         run: |
